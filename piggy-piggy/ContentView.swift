@@ -7,8 +7,21 @@
 
 import SwiftUI
 
+class ThemeManager: ObservableObject {
+    @Published var isDarkMode: Bool {
+        didSet {
+            UserDefaults.standard.set(isDarkMode, forKey: "isDarkMode")
+        }
+    }
+    
+    init() {
+        self.isDarkMode = UserDefaults.standard.bool(forKey: "isDarkMode")
+    }
+}
+
 struct ContentView: View {
     @StateObject private var viewModel = TallyViewModel()
+    @StateObject private var themeManager = ThemeManager()
     @State private var showingAddTally = false
     @State private var newTallyName = ""
     @State private var tallyToDelete: Tally?
@@ -19,6 +32,8 @@ struct ContentView: View {
             List {
                 ForEach(viewModel.tallies) { tally in
                     TallyRow(viewModel: viewModel, tally: tally)
+                        .listRowInsets(EdgeInsets())
+                        .listRowBackground(Color.clear)
                 }
                 .onDelete { indexSet in
                     if let index = indexSet.first {
@@ -27,11 +42,18 @@ struct ContentView: View {
                     }
                 }
             }
+            .listStyle(PlainListStyle())
+            .background(Color(.systemGroupedBackground))
             .navigationTitle("Piggy Piggy")
             .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
+                ToolbarItem(placement: .navigationBarLeading) {
                     Button(action: { showingAddTally = true }) {
                         Image(systemName: "plus")
+                    }
+                }
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button(action: { themeManager.isDarkMode.toggle() }) {
+                        Image(systemName: themeManager.isDarkMode ? "sun.max.fill" : "moon.fill")
                     }
                 }
             }
@@ -62,6 +84,7 @@ struct ContentView: View {
                 }
             }
         }
+        .preferredColorScheme(themeManager.isDarkMode ? .dark : .light)
     }
 }
 

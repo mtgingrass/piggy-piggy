@@ -65,6 +65,7 @@ struct TransactionSheet: View {
 struct TallyRow: View {
     @ObservedObject var viewModel: TallyViewModel
     let tally: Tally
+    @Environment(\.colorScheme) var colorScheme
     
     @State private var showingAddSheet = false
     @State private var showingSubtractSheet = false
@@ -124,8 +125,17 @@ struct TallyRow: View {
                 .buttonStyle(BorderlessButtonStyle())
             }
         }
-        .padding(.vertical, 8)
-        // Sheets in separate modifiers
+        .padding(.vertical, 12)
+        .padding(.horizontal, 16)
+        .background(colorScheme == .dark ? Color(.systemGray6) : Color(.systemBackground))
+        .cornerRadius(12)
+        .shadow(color: Color.black.opacity(colorScheme == .dark ? 0.3 : 0.1), radius: 2, x: 0, y: 1)
+        .overlay(
+            RoundedRectangle(cornerRadius: 12)
+                .stroke(colorScheme == .dark ? Color(.systemGray4) : Color(.systemGray5), lineWidth: 1)
+        )
+        .padding(.horizontal)
+        .padding(.vertical, 4)
         .sheet(isPresented: $showingAddSheet) {
             TransactionSheet(
                 title: "Add Funds",
@@ -149,18 +159,68 @@ struct TallyRow: View {
 
 #Preview("Default State") {
     NavigationView {
-        TallyRow(
-            viewModel: TallyViewModel(),
-            tally: Tally(
-                name: "Kai",
-                transactions: [
-                    Transaction(amount: 100),
-                    Transaction(amount: -20, note: "Toy store")
-                ]
-            )
-        )
-        .padding()
+        ScrollView {
+            VStack(spacing: 8) {
+                TallyRow(
+                    viewModel: TallyViewModel(),
+                    tally: Tally(
+                        name: "Kai",
+                        transactions: [
+                            Transaction(amount: 100),
+                            Transaction(amount: -20, note: "Toy store")
+                        ]
+                    )
+                )
+                
+                TallyRow(
+                    viewModel: TallyViewModel(),
+                    tally: Tally(
+                        name: "Freya",
+                        transactions: [
+                            Transaction(amount: 50),
+                            Transaction(amount: -10, note: "Candy")
+                        ]
+                    )
+                )
+            }
+            .padding(.vertical)
+        }
+        .background(Color(.systemGroupedBackground))
     }
+    .previewLayout(.sizeThatFits)
+}
+
+#Preview("Dark Mode") {
+    NavigationView {
+        ScrollView {
+            VStack(spacing: 8) {
+                TallyRow(
+                    viewModel: TallyViewModel(),
+                    tally: Tally(
+                        name: "Kai",
+                        transactions: [
+                            Transaction(amount: 100),
+                            Transaction(amount: -20, note: "Toy store")
+                        ]
+                    )
+                )
+                
+                TallyRow(
+                    viewModel: TallyViewModel(),
+                    tally: Tally(
+                        name: "Freya",
+                        transactions: [
+                            Transaction(amount: 50),
+                            Transaction(amount: -10, note: "Candy")
+                        ]
+                    )
+                )
+            }
+            .padding(.vertical)
+        }
+        .background(Color(.systemGroupedBackground))
+    }
+    .preferredColorScheme(.dark)
     .previewLayout(.sizeThatFits)
 }
 
