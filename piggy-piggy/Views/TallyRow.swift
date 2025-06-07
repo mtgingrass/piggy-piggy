@@ -8,6 +8,9 @@ struct TransactionSheet: View {
     
     @State private var amount = ""
     @State private var note = ""
+    @FocusState private var isAmountFocused: Bool
+    
+    private let quickAmounts = [1.0, 5.0, 10.0, 20.0]
     
     var body: some View {
         NavigationView {
@@ -15,6 +18,27 @@ struct TransactionSheet: View {
                 Section {
                     TextField("Amount", text: $amount)
                         .keyboardType(.decimalPad)
+                        .focused($isAmountFocused)
+                    
+                    // Quick amount buttons
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack(spacing: 8) {
+                            ForEach(quickAmounts, id: \.self) { value in
+                                Button {
+                                    amount = String(format: "%.2f", value)
+                                } label: {
+                                    Text("$\(value, specifier: "%.0f")")
+                                        .padding(.horizontal, 12)
+                                        .padding(.vertical, 6)
+                                        .background(Color.blue.opacity(0.1))
+                                        .foregroundColor(.blue)
+                                        .cornerRadius(8)
+                                }
+                            }
+                        }
+                        .padding(.vertical, 4)
+                    }
+                    
                     TextField("Note (optional)", text: $note)
                 }
             }
@@ -30,6 +54,10 @@ struct TransactionSheet: View {
                     isPresented = false
                 }
             )
+            .onAppear {
+                // Focus the amount field when the sheet appears
+                isAmountFocused = true
+            }
         }
     }
 }
