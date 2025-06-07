@@ -75,12 +75,19 @@ struct TallyRow: View {
             // Navigation area
             NavigationLink(destination: TallyDetailView(viewModel: viewModel, tally: tally)) {
                 HStack {
-                    VStack(alignment: .leading) {
+                    VStack(alignment: .leading, spacing: 4) {
                         Text(tally.name)
                             .font(.headline)
                         Text("$\(tally.balance, specifier: "%.2f")")
-                            .font(.subheadline)
-                            .foregroundColor(.secondary)
+                            .font(.system(size: 24, weight: .bold))
+                            .foregroundColor(tally.balance >= 0 ? .green : .red)
+                            .padding(.vertical, 4)
+                            .padding(.horizontal, 8)
+                            .background(
+                                RoundedRectangle(cornerRadius: 8)
+                                    .fill(colorScheme == .dark ? Color(.systemGray6) : Color(.systemBackground))
+                                    .shadow(color: tally.balance >= 0 ? Color.green.opacity(0.2) : Color.red.opacity(0.2), radius: 2, x: 0, y: 1)
+                            )
                     }
                     Spacer()
                     Image(systemName: "chevron.right")
