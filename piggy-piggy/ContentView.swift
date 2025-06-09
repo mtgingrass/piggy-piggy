@@ -19,10 +19,24 @@ class ThemeManager: ObservableObject {
     }
 }
 
+struct CustomTitleView: View {
+    var body: some View {
+        HStack(spacing: 4) {
+            Text("Piggy")
+                .font(.system(size: 28, weight: .bold))
+                .foregroundColor(.pink)
+            Text("Piggy")
+                .font(.system(size: 28, weight: .bold))
+                .foregroundColor(.purple)
+        }
+    }
+}
+
 struct ContentView: View {
     @StateObject private var viewModel = TallyViewModel()
     @StateObject private var themeManager = ThemeManager()
     @State private var showingAddTally = false
+    @State private var showingTipJar = false
     @State private var newTallyName = ""
     @State private var tallyToDelete: Tally?
     @State private var showingDeleteConfirmation = false
@@ -44,27 +58,38 @@ struct ContentView: View {
             }
             .listStyle(PlainListStyle())
             .background(Color(.systemGroupedBackground))
-            .navigationTitle("Piggy Piggy")
+            .navigationBarTitleDisplayMode(.inline)
             .toolbar {
+                ToolbarItem(placement: .principal) {
+                    CustomTitleView()
+                }
                 ToolbarItem(placement: .navigationBarLeading) {
                     Button(action: { showingAddTally = true }) {
                         Image(systemName: "plus")
                     }
                 }
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    Button(action: { themeManager.isDarkMode.toggle() }) {
-                        Image(systemName: themeManager.isDarkMode ? "sun.max.fill" : "moon.fill")
+                    HStack(spacing: 16) {
+                        Button(action: { showingTipJar = true }) {
+                            Image(systemName: "heart.fill")
+                                .foregroundColor(.pink)
+                        }
+                        Button(action: { themeManager.isDarkMode.toggle() }) {
+                            Image(systemName: themeManager.isDarkMode ? "sun.max.fill" : "moon.fill")
+                        }
                     }
                 }
             }
-            .alert("Add New Tally", isPresented: $showingAddTally) {
+            .alert("New Tally", isPresented: $showingAddTally) {
                 TextField("Name", text: $newTallyName)
                 Button("Cancel", role: .cancel) {
                     newTallyName = ""
                 }
                 Button("Add") {
-                    viewModel.addTally(name: newTallyName)
-                    newTallyName = ""
+                    if !newTallyName.isEmpty {
+                        viewModel.addTally(name: newTallyName)
+                        newTallyName = ""
+                    }
                 }
             }
             .alert("Delete Tally", isPresented: $showingDeleteConfirmation) {
@@ -82,6 +107,9 @@ struct ContentView: View {
                 if let tally = tallyToDelete {
                     Text("Are you sure you want to delete \(tally.name)'s tally? This cannot be undone.")
                 }
+            }
+            .sheet(isPresented: $showingTipJar) {
+                TipJarView()
             }
         }
         .preferredColorScheme(themeManager.isDarkMode ? .dark : .light)

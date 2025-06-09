@@ -90,8 +90,8 @@ struct TallyRow: View {
                             )
                     }
                     Spacer()
-                    Image(systemName: "chevron.right")
-                        .foregroundColor(.gray)
+                    Image(systemName: "arrow.right.circle.fill")
+                        .foregroundColor(.accentColor)
                 }
                 .contentShape(Rectangle())
             }
