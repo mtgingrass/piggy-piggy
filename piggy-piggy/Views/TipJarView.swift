@@ -11,16 +11,20 @@ class TipJarStore: ObservableObject {
     
     init() {
         Task {
-            await requestProducts()
+            await fetchProducts()
         }
     }
     
     @MainActor
-    func requestProducts() async {
+    func fetchProducts() async {
         do {
             products = try await Product.products(for: productIDs)
+            if products.isEmpty {
+                errorMessage = "No tip products available yet."
+            }
         } catch {
-            errorMessage = "Failed to load products."
+            errorMessage = "Failed to load products: \(error.localizedDescription)"
+            print("❌ StoreKit error: \(error)")
         }
     }
     
@@ -103,10 +107,17 @@ struct TipJarView: View {
                             .multilineTextAlignment(.center)
                             .padding(.horizontal)
                         
+                        // Error message
+                        if let error = store.errorMessage {
+                            Text(error)
+                                .foregroundColor(.red)
+                                .font(.caption)
+                                .padding(.vertical, 4)
+                        }
                         // Tip Options
-                        if store.products.isEmpty {
+                        if store.products.isEmpty && store.errorMessage == nil {
                             ProgressView("Loading...")
-                        } else {
+                        } else if !store.products.isEmpty {
                             HStack(spacing: 16) {
                                 ForEach(store.products, id: \.id) { product in
                                     TipProductButton(product: product, isLoading: store.purchaseInProgress) {
@@ -117,11 +128,6 @@ struct TipJarView: View {
                                 }
                             }
                             .padding(.top, 8)
-                        }
-                        if let error = store.errorMessage {
-                            Text(error)
-                                .foregroundColor(.red)
-                                .font(.caption)
                         }
                     }
                     .padding()
