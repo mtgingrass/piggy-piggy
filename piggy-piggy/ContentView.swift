@@ -112,6 +112,7 @@ struct ContentView: View {
                 TipJarView()
             }
         }
+        .navigationViewStyle(.stack)
         .preferredColorScheme(themeManager.isDarkMode ? .dark : .light)
     }
 }
@@ -150,3 +151,4 @@ struct ContentView: View {
     return ContentView()
         .environmentObject(viewModel)
 }
+
