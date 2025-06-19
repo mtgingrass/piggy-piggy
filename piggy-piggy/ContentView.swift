@@ -36,7 +36,7 @@ struct ContentView: View {
     @StateObject private var viewModel = TallyViewModel()
     @StateObject private var themeManager = ThemeManager()
     @State private var showingAddTally = false
-    @State private var showingTipJar = false
+    @State private var showingAbout = false
     @State private var newTallyName = ""
     @State private var tallyToDelete: Tally?
     @State private var showingDeleteConfirmation = false
@@ -70,7 +70,7 @@ struct ContentView: View {
                 }
                 ToolbarItem(placement: .navigationBarTrailing) {
                     HStack(spacing: 16) {
-                        Button(action: { showingTipJar = true }) {
+                        Button(action: { showingAbout = true }) {
                             Image(systemName: "info.circle")
                                 .foregroundColor(.blue)
                         }
@@ -108,7 +108,7 @@ struct ContentView: View {
                     Text("Are you sure you want to delete \(tally.name)'s tally? This cannot be undone.")
                 }
             }
-            .sheet(isPresented: $showingTipJar) {
+            .sheet(isPresented: $showingAbout) {
                 AboutView()
             }
         }
@@ -151,4 +151,3 @@ struct ContentView: View {
     return ContentView()
         .environmentObject(viewModel)
 }
-
