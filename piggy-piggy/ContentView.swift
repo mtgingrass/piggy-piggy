@@ -71,8 +71,8 @@ struct ContentView: View {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     HStack(spacing: 16) {
                         Button(action: { showingTipJar = true }) {
-                            Image(systemName: "heart.fill")
-                                .foregroundColor(.pink)
+                            Image(systemName: "info.circle")
+                                .foregroundColor(.blue)
                         }
                         Button(action: { themeManager.isDarkMode.toggle() }) {
                             Image(systemName: themeManager.isDarkMode ? "sun.max.fill" : "moon.fill")
@@ -109,7 +109,7 @@ struct ContentView: View {
                 }
             }
             .sheet(isPresented: $showingTipJar) {
-                TipJarView()
+                AboutView()
             }
         }
         .navigationViewStyle(.stack)
