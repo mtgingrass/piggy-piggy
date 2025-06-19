@@ -71,8 +71,8 @@ struct ContentView: View {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     HStack(spacing: 16) {
                         Button(action: { showingAbout = true }) {
-                            Image(systemName: "info.circle")
-                                .foregroundColor(.blue)
+                            Image(systemName: "heart.fill")
+                                .foregroundColor(.red)
                         }
                         Button(action: { themeManager.isDarkMode.toggle() }) {
                             Image(systemName: themeManager.isDarkMode ? "sun.max.fill" : "moon.fill")
