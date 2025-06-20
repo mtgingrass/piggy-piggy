@@ -57,11 +57,9 @@ struct TallyDetailView: View {
                             }
                             .pickerStyle(MenuPickerStyle())
                         }
-                        HStack {
-                            Button("Cancel") {
-                                showingAllowanceForm = false
-                            }
-                            .buttonStyle(.bordered)
+                        
+                        // Buttons
+                        VStack(spacing: 8) {
                             Button("Save") {
                                 if let amount = Double(allowanceAmount), amount > 0 {
                                     viewModel.updateAllowanceSettings(
@@ -74,6 +72,25 @@ struct TallyDetailView: View {
                             }
                             .buttonStyle(.borderedProminent)
                             .disabled(allowanceAmount.isEmpty || Double(allowanceAmount) == nil || Double(allowanceAmount) == 0)
+                            
+                            Button("Cancel") {
+                                showingAllowanceForm = false
+                            }
+                            .buttonStyle(.bordered)
+                            
+                            if currentTally.weeklyAllowance != nil {
+                                Button(role: .destructive) {
+                                    viewModel.updateAllowanceSettings(
+                                        for: currentTally.id,
+                                        weeklyAmount: nil,
+                                        startDay: nil
+                                    )
+                                    showingAllowanceForm = false
+                                } label: {
+                                    Text("Remove Allowance")
+                                }
+                                .buttonStyle(.bordered)
+                            }
                         }
                     }
                     .padding()
@@ -85,21 +102,14 @@ struct TallyDetailView: View {
                             .font(.subheadline)
                             .foregroundColor(.secondary)
                         Spacer()
-                        Button("Edit") {
+                        Button {
                             allowanceAmount = String(amount)
                             allowanceDay = day
                             showingAllowanceForm = true
+                        } label: {
+                            Image(systemName: "pencil.circle")
+                                .foregroundColor(.accentColor)
                         }
-                        .buttonStyle(.borderless)
-                        Button("Remove Allowance") {
-                            viewModel.updateAllowanceSettings(
-                                for: currentTally.id,
-                                weeklyAmount: nil,
-                                startDay: nil
-                            )
-                        }
-                        .buttonStyle(.bordered)
-                        .foregroundColor(.red)
                     }
                     .padding(.vertical, 4)
                 } else {
@@ -222,55 +232,69 @@ struct TransactionRow: View {
     }
 }
 
-#Preview("Default") {
-    NavigationView {
-        TallyDetailView(
-            viewModel: TallyViewModel(),
-            tally: Tally(
-                name: "Kai",
-                transactions: [
-                    Transaction(amount: 100),
-                    Transaction(amount: -20, note: "Toy store"),
-                    Transaction(amount: 50, note: "Birthday gift")
-                ]
-            )
-        )
-    }
-}
-
-#Preview("Allowance Test") {
-    NavigationView {
-        AllowanceTestView()
-    }
-}
-
-struct AllowanceTestView: View {
-    @StateObject private var viewModel = TallyViewModel()
-    
-    var body: some View {
-        TallyDetailView(
-            viewModel: viewModel,
-            tally: createTestTally()
-        )
-        .onAppear {
-            setupTestData()
+struct TallyDetailView_Previews: PreviewProvider {
+    static var previews: some View {
+        Group {
+            NavigationView {
+                TallyDetailView(
+                    viewModel: TallyViewModel(),
+                    tally: Tally(
+                        name: "Kai",
+                        transactions: [
+                            Transaction(amount: 100),
+                            Transaction(amount: -20, note: "Toy store")
+                        ]
+                    )
+                )
+            }
+            .previewDisplayName("No Allowance")
+            
+            NavigationView {
+                TallyDetailView(
+                    viewModel: TallyViewModel(),
+                    tally: Tally(
+                        name: "Freya",
+                        transactions: [
+                            Transaction(amount: 50),
+                            Transaction(amount: -10, note: "Candy")
+                        ],
+                        weeklyAllowance: 20,
+                        allowanceStartDay: 1,  // Monday
+                        lastAllowanceDate: Date()
+                    )
+                )
+            }
+            .previewDisplayName("With Allowance")
+            
+            NavigationView {
+                TallyDetailView(
+                    viewModel: TallyViewModel(),
+                    tally: Tally(
+                        name: "Freya",
+                        transactions: [
+                            Transaction(amount: 50),
+                            Transaction(amount: -10, note: "Candy")
+                        ],
+                        weeklyAllowance: 20,
+                        allowanceStartDay: 1,
+                        lastAllowanceDate: Date()
+                    )
+                )
+            }
+            .preferredColorScheme(.dark)
+            .previewDisplayName("Dark Mode")
+            
+            NavigationView {
+                TallyDetailView(
+                    viewModel: TallyViewModel(),
+                    tally: Tally(
+                        name: "New Tally",
+                        transactions: []
+                    )
+                )
+            }
+            .previewDisplayName("Empty State")
         }
     }
-    
-    private func createTestTally() -> Tally {
-        let threeWeeksAgo = Calendar.current.date(byAdding: .weekOfYear, value: -3, to: Date())!
-        return Tally(
-            name: "Test Child",
-            transactions: [Transaction(amount: 100, note: "Initial deposit")],
-            weeklyAllowance: 10.0,
-            allowanceStartDay: 5, // Friday
-            lastAllowanceDate: threeWeeksAgo
-        )
-    }
-    
-    private func setupTestData() {
-        let testTally = createTestTally()
-        viewModel.tallies = [testTally]
-        viewModel.checkAndApplyMissedAllowances()
-    }
-} 
+}
+
