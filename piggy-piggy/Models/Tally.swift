@@ -4,15 +4,21 @@ struct Tally: Identifiable, Codable {
     var id: UUID
     var name: String
     var transactions: [Transaction]
+    var weeklyAllowance: Double?
+    var allowanceStartDay: Int?  // 0 = Sunday ... 6 = Saturday
+    var lastAllowanceDate: Date?
     
     var balance: Double {
         transactions.map { $0.amount }.reduce(0, +)
     }
     
-    init(id: UUID = UUID(), name: String, transactions: [Transaction] = []) {
+    init(id: UUID = UUID(), name: String, transactions: [Transaction] = [], weeklyAllowance: Double? = nil, allowanceStartDay: Int? = nil, lastAllowanceDate: Date? = nil) {
         self.id = id
         self.name = name
         self.transactions = transactions
+        self.weeklyAllowance = weeklyAllowance
+        self.allowanceStartDay = allowanceStartDay
+        self.lastAllowanceDate = lastAllowanceDate
     }
 }
 

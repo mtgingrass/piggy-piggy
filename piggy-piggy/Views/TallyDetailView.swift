@@ -10,6 +10,16 @@ struct TallyDetailView: View {
     @State private var newName = ""
     @State private var amount = ""
     @State private var note = ""
+    // Allowance UI state
+    @State private var showingAllowanceForm = false
+    @State private var allowanceAmount = ""
+    @State private var allowanceDay = 0
+    let weekdays = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
+    
+    // Get the current tally from the ViewModel
+    private var currentTally: Tally {
+        viewModel.tallies.first { $0.id == tally.id } ?? tally
+    }
     
     var body: some View {
         VStack(spacing: 16) {
@@ -18,11 +28,89 @@ struct TallyDetailView: View {
                 Text("Current Balance")
                     .font(.headline)
                     .foregroundColor(.secondary)
-                Text("$\(tally.balance, specifier: "%.2f")")
+                Text("$\(currentTally.balance, specifier: "%.2f")")
                     .font(.system(size: 48, weight: .bold))
-                    .foregroundColor(tally.balance >= 0 ? .green : .red)
+                    .foregroundColor(currentTally.balance >= 0 ? .green : .red)
             }
             .frame(maxWidth: .infinity)
+            .padding()
+            .background(Color(.systemBackground))
+            .cornerRadius(12)
+            .shadow(radius: 2)
+            
+            // Allowance Section
+            Section {
+                if showingAllowanceForm {
+                    VStack(spacing: 12) {
+                        HStack {
+                            Text("Weekly Amount:")
+                            TextField("Amount", text: $allowanceAmount)
+                                .keyboardType(.decimalPad)
+                                .textFieldStyle(RoundedBorderTextFieldStyle())
+                        }
+                        HStack {
+                            Text("Payment Day:")
+                            Picker("Day of Week", selection: $allowanceDay) {
+                                ForEach(0..<7) { index in
+                                    Text(weekdays[index]).tag(index)
+                                }
+                            }
+                            .pickerStyle(MenuPickerStyle())
+                        }
+                        HStack {
+                            Button("Cancel") {
+                                showingAllowanceForm = false
+                            }
+                            .buttonStyle(.bordered)
+                            Button("Save") {
+                                if let amount = Double(allowanceAmount), amount > 0 {
+                                    viewModel.updateAllowanceSettings(
+                                        for: currentTally.id,
+                                        weeklyAmount: amount,
+                                        startDay: allowanceDay
+                                    )
+                                    showingAllowanceForm = false
+                                }
+                            }
+                            .buttonStyle(.borderedProminent)
+                            .disabled(allowanceAmount.isEmpty || Double(allowanceAmount) == nil || Double(allowanceAmount) == 0)
+                        }
+                    }
+                    .padding()
+                } else if let amount = currentTally.weeklyAllowance, let day = currentTally.allowanceStartDay {
+                    HStack {
+                        Image(systemName: "checkmark.circle.fill")
+                            .foregroundColor(.green)
+                        Text("$\(amount, specifier: "%.2f") every \(weekdays[day])")
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+                        Spacer()
+                        Button("Edit") {
+                            allowanceAmount = String(amount)
+                            allowanceDay = day
+                            showingAllowanceForm = true
+                        }
+                        .buttonStyle(.borderless)
+                        Button("Remove Allowance") {
+                            viewModel.updateAllowanceSettings(
+                                for: currentTally.id,
+                                weeklyAmount: nil,
+                                startDay: nil
+                            )
+                        }
+                        .buttonStyle(.bordered)
+                        .foregroundColor(.red)
+                    }
+                    .padding(.vertical, 4)
+                } else {
+                    Button("Set Weekly Allowance") {
+                        allowanceAmount = ""
+                        allowanceDay = 0
+                        showingAllowanceForm = true
+                    }
+                    .buttonStyle(.borderedProminent)
+                }
+            }
             .padding()
             .background(Color(.systemBackground))
             .cornerRadius(12)
@@ -66,18 +154,18 @@ struct TallyDetailView: View {
             
             // Transactions list
             List {
-                ForEach(tally.transactions.sorted(by: { $0.timestamp > $1.timestamp })) { transaction in
+                ForEach(currentTally.transactions.sorted(by: { $0.timestamp > $1.timestamp })) { transaction in
                     TransactionRow(transaction: transaction)
                 }
             }
             .listStyle(PlainListStyle())
         }
         .padding()
-        .navigationTitle(tally.name)
+        .navigationTitle(currentTally.name)
         .toolbar {
             ToolbarItem(placement: .navigationBarTrailing) {
                 Button("Edit Name") {
-                    newName = tally.name
+                    newName = currentTally.name
                     showingEditName = true
                 }
             }
@@ -86,7 +174,7 @@ struct TallyDetailView: View {
             TextField("Name", text: $newName)
             Button("Cancel", role: .cancel) { }
             Button("Save") {
-                viewModel.updateTallyName(tally.id, newName: newName)
+                viewModel.updateTallyName(currentTally.id, newName: newName)
             }
         }
         .sheet(isPresented: $showingAddSheet) {
@@ -95,7 +183,7 @@ struct TallyDetailView: View {
                 isAdd: true,
                 isPresented: $showingAddSheet
             ) { amount, note in
-                viewModel.addTransaction(to: tally.id, amount: amount, note: note)
+                viewModel.addTransaction(to: currentTally.id, amount: amount, note: note)
             }
         }
         .sheet(isPresented: $showingSubtractSheet) {
@@ -104,7 +192,7 @@ struct TallyDetailView: View {
                 isAdd: false,
                 isPresented: $showingSubtractSheet
             ) { amount, note in
-                viewModel.addTransaction(to: tally.id, amount: -amount, note: note)
+                viewModel.addTransaction(to: currentTally.id, amount: -amount, note: note)
             }
         }
     }
@@ -134,7 +222,7 @@ struct TransactionRow: View {
     }
 }
 
-#Preview {
+#Preview("Default") {
     NavigationView {
         TallyDetailView(
             viewModel: TallyViewModel(),
@@ -147,5 +235,42 @@ struct TransactionRow: View {
                 ]
             )
         )
+    }
+}
+
+#Preview("Allowance Test") {
+    NavigationView {
+        AllowanceTestView()
+    }
+}
+
+struct AllowanceTestView: View {
+    @StateObject private var viewModel = TallyViewModel()
+    
+    var body: some View {
+        TallyDetailView(
+            viewModel: viewModel,
+            tally: createTestTally()
+        )
+        .onAppear {
+            setupTestData()
+        }
+    }
+    
+    private func createTestTally() -> Tally {
+        let threeWeeksAgo = Calendar.current.date(byAdding: .weekOfYear, value: -3, to: Date())!
+        return Tally(
+            name: "Test Child",
+            transactions: [Transaction(amount: 100, note: "Initial deposit")],
+            weeklyAllowance: 10.0,
+            allowanceStartDay: 5, // Friday
+            lastAllowanceDate: threeWeeksAgo
+        )
+    }
+    
+    private func setupTestData() {
+        let testTally = createTestTally()
+        viewModel.tallies = [testTally]
+        viewModel.checkAndApplyMissedAllowances()
     }
 } 
