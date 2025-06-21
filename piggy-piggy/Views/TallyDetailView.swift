@@ -59,7 +59,7 @@ struct TallyDetailView: View {
                         }
                         
                         // Buttons
-                        VStack(spacing: 8) {
+                        HStack(spacing: 8) {
                             Button("Save") {
                                 if let amount = Double(allowanceAmount), amount > 0 {
                                     viewModel.updateAllowanceSettings(
@@ -87,7 +87,7 @@ struct TallyDetailView: View {
                                     )
                                     showingAllowanceForm = false
                                 } label: {
-                                    Text("Remove Allowance")
+                                    Text("Remove")
                                 }
                                 .buttonStyle(.bordered)
                             }
@@ -96,15 +96,13 @@ struct TallyDetailView: View {
                     .padding()
                 } else if let amount = currentTally.weeklyAllowance, let day = currentTally.allowanceStartDay {
                     HStack {
-                        Image(systemName: "checkmark.circle.fill")
+                        Image(systemName: "dollarsign.circle.fill")
                             .foregroundColor(.green)
                         Text("$\(amount, specifier: "%.2f") every \(weekdays[day])")
                             .font(.subheadline)
                             .foregroundColor(.secondary)
                         Spacer()
                         Button {
-                            allowanceAmount = String(amount)
-                            allowanceDay = day
                             showingAllowanceForm = true
                         } label: {
                             Image(systemName: "pencil.circle")
@@ -113,10 +111,13 @@ struct TallyDetailView: View {
                     }
                     .padding(.vertical, 4)
                 } else {
-                    Button("Set Weekly Allowance") {
-                        allowanceAmount = ""
-                        allowanceDay = 0
+                    Button {
                         showingAllowanceForm = true
+                    } label: {
+                        HStack {
+                            Image(systemName: "plus.circle")
+                            Text("Set Weekly Allowance")
+                        }
                     }
                     .buttonStyle(.borderedProminent)
                 }
@@ -125,6 +126,9 @@ struct TallyDetailView: View {
             .background(Color(.systemBackground))
             .cornerRadius(12)
             .shadow(radius: 2)
+            .sheet(isPresented: $showingAllowanceForm) {
+                AllowanceSettingsView(viewModel: viewModel, tally: currentTally)
+            }
             
             // Action buttons
             HStack(spacing: 12) {
