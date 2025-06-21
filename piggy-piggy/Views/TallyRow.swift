@@ -70,6 +70,8 @@ struct TallyRow: View {
     @State private var showingAddSheet = false
     @State private var showingSubtractSheet = false
     
+    private let weekdays = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
+    
     var body: some View {
         VStack(spacing: 12) {
             // Navigation area
@@ -88,6 +90,25 @@ struct TallyRow: View {
                                     .fill(colorScheme == .dark ? Color(.systemGray6) : Color(.systemBackground))
                                     .shadow(color: tally.balance >= 0 ? Color.green.opacity(0.2) : Color.red.opacity(0.2), radius: 2, x: 0, y: 1)
                             )
+                        
+                        // Allowance info
+                        if let amount = tally.weeklyAllowance,
+                           let day = tally.allowanceStartDay {
+                            HStack(spacing: 4) {
+                                Text("ALLOWANCE")
+                                    .font(.system(size: 10, weight: .medium))
+                                    .foregroundColor(.secondary)
+                                    .padding(.horizontal, 6)
+                                    .padding(.vertical, 2)
+                                    .background(
+                                        RoundedRectangle(cornerRadius: 4)
+                                            .fill(Color(.systemGray6))
+                                    )
+                                Text("$\(amount, specifier: "%.2f") every \(weekdays[day])")
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                            }
+                        }
                     }
                     Spacer()
                     Image(systemName: "arrow.right.circle.fill")
