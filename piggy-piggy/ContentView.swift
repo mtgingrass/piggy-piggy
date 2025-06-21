@@ -60,12 +60,6 @@ struct ContentView: View {
                 }
                 .listStyle(PlainListStyle())
                 .background(Color(.systemGroupedBackground))
-                
-                // Debug Panel (only show in debug mode)
-                if showingDebugPanel {
-                    DebugPanel(viewModel: viewModel)
-                        .transition(.move(edge: .bottom))
-                }
             }
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -81,9 +75,7 @@ struct ContentView: View {
                     HStack(spacing: 16) {
                         // Debug toggle (only in debug builds)
                         #if DEBUG
-                        Button(action: { 
-                            withAnimation { showingDebugPanel.toggle() }
-                        }) {
+                        Button(action: { showingDebugPanel = true }) {
                             Image(systemName: "ladybug")
                                 .foregroundColor(.orange)
                         }
@@ -130,83 +122,15 @@ struct ContentView: View {
             .sheet(isPresented: $showingAbout) {
                 AboutView()
             }
+            .sheet(isPresented: $showingDebugPanel) {
+                NavigationView {
+                    DebugPanelView(viewModel: viewModel)
+                }
+                .navigationViewStyle(.stack)
+            }
         }
         .navigationViewStyle(.stack)
         .preferredColorScheme(themeManager.isDarkMode ? .dark : .light)
-    }
-}
-
-struct DebugPanel: View {
-    @ObservedObject var viewModel: TallyViewModel
-    @State private var timeTravelAmount = 1
-    @State private var timeTravelUnit = TimeUnit.week
-    
-    enum TimeUnit: String, CaseIterable {
-        case day = "Day"
-        case week = "Week"
-    }
-    
-    var body: some View {
-        VStack(spacing: 12) {
-            Text("Debug Panel")
-                .font(.headline)
-                .foregroundColor(.orange)
-            
-            HStack {
-                Button("Create Debug Tally") {
-                    viewModel.createDebugTally()
-                }
-                .buttonStyle(.bordered)
-                
-                Button("Clear Debug Data") {
-                    viewModel.clearDebugData()
-                }
-                .buttonStyle(.bordered)
-            }
-            
-            HStack {
-                Text("Time Travel:")
-                Stepper("\(timeTravelAmount) \(timeTravelUnit.rawValue.lowercased())\(timeTravelAmount == 1 ? "" : "s")", value: $timeTravelAmount, in: 1...30)
-                Picker("Unit", selection: $timeTravelUnit) {
-                    ForEach(TimeUnit.allCases, id: \.self) { unit in
-                        Text(unit.rawValue).tag(unit)
-                    }
-                }
-                .pickerStyle(SegmentedPickerStyle())
-                .frame(width: 100)
-                Button("Go") {
-                    switch timeTravelUnit {
-                    case .day:
-                        viewModel.simulateTimeTravel(days: timeTravelAmount)
-                    case .week:
-                        viewModel.simulateTimeTravel(weeks: timeTravelAmount)
-                    }
-                }
-                .buttonStyle(.borderedProminent)
-            }
-            
-            if let debugTally = viewModel.tallies.first(where: { $0.name == "Debug Child" }) {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("Debug Tally Status:")
-                        .font(.subheadline)
-                        .fontWeight(.medium)
-                    Text("Balance: $\(debugTally.balance, specifier: "%.2f")")
-                    if let allowance = debugTally.weeklyAllowance {
-                        Text("Allowance: $\(allowance, specifier: "%.2f") weekly")
-                    }
-                    if let lastDate = debugTally.lastAllowanceDate {
-                        Text("Last payment: \(lastDate, style: .date)")
-                    }
-                }
-                .font(.caption)
-                .padding(.horizontal)
-            }
-        }
-        .padding()
-        .background(Color(.systemBackground))
-        .cornerRadius(12)
-        .shadow(radius: 2)
-        .padding(.horizontal)
     }
 }
 
