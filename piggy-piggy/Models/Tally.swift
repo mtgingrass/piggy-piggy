@@ -27,11 +27,13 @@ struct Transaction: Identifiable, Codable {
     var timestamp: Date
     var amount: Double
     var note: String?
+    var isAllowance: Bool
     
-    init(id: UUID = UUID(), timestamp: Date = Date(), amount: Double, note: String? = nil) {
+    init(id: UUID = UUID(), timestamp: Date = Date(), amount: Double, note: String? = nil, isAllowance: Bool = false) {
         self.id = id
         self.timestamp = timestamp
         self.amount = amount
         self.note = note
+        self.isAllowance = isAllowance
     }
 } 

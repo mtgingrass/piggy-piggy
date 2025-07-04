@@ -24,19 +24,39 @@ struct TallyDetailView: View {
     var body: some View {
         VStack(spacing: 16) {
             // Balance card
-            VStack(spacing: 8) {
+            VStack(spacing: 12) {
                 Text("Current Balance")
-                    .font(.headline)
+                    .font(.system(size: 18, weight: .semibold, design: .rounded))
                     .foregroundColor(.secondary)
                 Text("$\(currentTally.balance, specifier: "%.2f")")
-                    .font(.system(size: 48, weight: .bold))
-                    .foregroundColor(currentTally.balance >= 0 ? .green : .red)
+                    .font(.system(size: 56, weight: .black, design: .rounded))
+                    .foregroundStyle(
+                        LinearGradient(
+                            colors: currentTally.balance >= 0 ? [.green, .mint] : [.red, .orange],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
+                    .shadow(color: (currentTally.balance >= 0 ? Color.green : Color.red).opacity(0.3), radius: 4, x: 0, y: 2)
             }
             .frame(maxWidth: .infinity)
-            .padding()
-            .background(Color(.systemBackground))
-            .cornerRadius(12)
-            .shadow(radius: 2)
+            .padding(24)
+            .background(
+                RoundedRectangle(cornerRadius: 20)
+                    .fill(Color(.systemBackground))
+                    .shadow(color: .black.opacity(0.1), radius: 8, x: 0, y: 4)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 20)
+                    .stroke(
+                        LinearGradient(
+                            colors: [.purple.opacity(0.3), .blue.opacity(0.3)],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        ),
+                        lineWidth: 2
+                    )
+            )
             
             // Allowance Section
             Section {
@@ -93,58 +113,108 @@ struct TallyDetailView: View {
                             }
                         }
                     }
-                    .padding()
+                    .padding(20)
                 } else if let amount = currentTally.weeklyAllowance, let day = currentTally.allowanceStartDay {
                     HStack {
                         Image(systemName: "dollarsign.circle.fill")
-                            .foregroundColor(.green)
+                            .font(.title2)
+                            .foregroundStyle(
+                                LinearGradient(
+                                    colors: [.green, .mint],
+                                    startPoint: .topLeading,
+                                    endPoint: .bottomTrailing
+                                )
+                            )
                         Text("$\(amount, specifier: "%.2f") every \(weekdays[day])")
-                            .font(.subheadline)
-                            .foregroundColor(.secondary)
+                            .font(.system(size: 16, weight: .medium, design: .rounded))
+                            .foregroundColor(.primary)
                         Spacer()
                         Button {
                             showingAllowanceForm = true
                         } label: {
-                            Image(systemName: "pencil.circle")
-                                .foregroundColor(.accentColor)
+                            Image(systemName: "pencil.circle.fill")
+                                .font(.title2)
+                                .foregroundStyle(
+                                    LinearGradient(
+                                        colors: [.blue, .purple],
+                                        startPoint: .topLeading,
+                                        endPoint: .bottomTrailing
+                                    )
+                                )
                         }
                     }
-                    .padding(.vertical, 4)
+                    .padding(.vertical, 8)
                 } else {
                     Button {
                         showingAllowanceForm = true
                     } label: {
-                        HStack {
-                            Image(systemName: "plus.circle")
+                        HStack(spacing: 8) {
+                            Image(systemName: "plus.circle.fill")
+                                .font(.title2)
                             Text("Set Weekly Allowance")
+                                .font(.system(size: 16, weight: .semibold, design: .rounded))
                         }
+                        .foregroundColor(.white)
+                        .padding(.vertical, 12)
+                        .frame(maxWidth: .infinity)
+                        .background(
+                            LinearGradient(
+                                colors: [.blue, .purple],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            )
+                        )
+                        .cornerRadius(12)
+                        .shadow(color: .blue.opacity(0.3), radius: 4, x: 0, y: 2)
                     }
-                    .buttonStyle(.borderedProminent)
+                    .buttonStyle(BorderlessButtonStyle())
                 }
             }
-            .padding()
-            .background(Color(.systemBackground))
-            .cornerRadius(12)
-            .shadow(radius: 2)
+            .padding(20)
+            .background(
+                RoundedRectangle(cornerRadius: 16)
+                    .fill(Color(.systemBackground))
+                    .shadow(color: .black.opacity(0.1), radius: 6, x: 0, y: 3)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 16)
+                    .stroke(
+                        LinearGradient(
+                            colors: [.purple.opacity(0.2), .blue.opacity(0.2)],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        ),
+                        lineWidth: 1
+                    )
+            )
             .sheet(isPresented: $showingAllowanceForm) {
                 AllowanceSettingsView(viewModel: viewModel, tally: currentTally)
             }
             
             // Action buttons
-            HStack(spacing: 12) {
+            HStack(spacing: 16) {
                 // Add button
                 Button {
                     showingAddSheet = true
                 } label: {
-                    HStack {
+                    HStack(spacing: 8) {
                         Image(systemName: "plus.circle.fill")
+                            .font(.title2)
                         Text("Add")
+                            .font(.system(size: 18, weight: .semibold, design: .rounded))
                     }
                     .frame(maxWidth: .infinity)
-                    .padding(.vertical, 12)
-                    .background(Color.green)
+                    .padding(.vertical, 16)
+                    .background(
+                        LinearGradient(
+                            colors: [.green, .mint],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
                     .foregroundColor(.white)
-                    .cornerRadius(8)
+                    .cornerRadius(16)
+                    .shadow(color: .green.opacity(0.3), radius: 4, x: 0, y: 2)
                 }
                 .buttonStyle(BorderlessButtonStyle())
                 
@@ -152,15 +222,24 @@ struct TallyDetailView: View {
                 Button {
                     showingSubtractSheet = true
                 } label: {
-                    HStack {
+                    HStack(spacing: 8) {
                         Image(systemName: "minus.circle.fill")
+                            .font(.title2)
                         Text("Subtract")
+                            .font(.system(size: 18, weight: .semibold, design: .rounded))
                     }
                     .frame(maxWidth: .infinity)
-                    .padding(.vertical, 12)
-                    .background(Color.red)
+                    .padding(.vertical, 16)
+                    .background(
+                        LinearGradient(
+                            colors: [.red, .orange],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
                     .foregroundColor(.white)
-                    .cornerRadius(8)
+                    .cornerRadius(16)
+                    .shadow(color: .red.opacity(0.3), radius: 4, x: 0, y: 2)
                 }
                 .buttonStyle(BorderlessButtonStyle())
             }
@@ -174,8 +253,16 @@ struct TallyDetailView: View {
             }
             .listStyle(PlainListStyle())
         }
-        .padding()
+        .padding(20)
+        .background(
+            LinearGradient(
+                colors: [Color(.systemGroupedBackground), Color(.systemBackground)],
+                startPoint: .top,
+                endPoint: .bottom
+            )
+        )
         .navigationTitle(currentTally.name)
+        .navigationBarTitleDisplayMode(.large)
         .toolbar {
             ToolbarItem(placement: .navigationBarTrailing) {
                 Button("Edit Name") {

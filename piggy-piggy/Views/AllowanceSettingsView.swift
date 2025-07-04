@@ -19,58 +19,120 @@ struct AllowanceSettingsView: View {
     
     var body: some View {
         NavigationView {
-            Form {
-                Section {
-                    HStack {
-                        Text("Weekly Amount")
-                        Spacer()
-                        TextField("Amount", text: $allowanceAmount)
-                            .keyboardType(.decimalPad)
-                            .multilineTextAlignment(.trailing)
-                    }
-                    
-                    Picker("Payment Day", selection: $allowanceDay) {
-                        ForEach(0..<7) { index in
-                            Text(weekdays[index]).tag(index)
-                        }
-                    }
-                } header: {
-                    Text("Allowance Settings")
-                } footer: {
-                    Text("The allowance will be automatically added every week on the selected day.")
-                }
-                
-                if tally.weeklyAllowance != nil {
-                    Section {
-                        Button(role: .destructive) {
-                            viewModel.updateAllowanceSettings(
-                                for: tally.id,
-                                weeklyAmount: nil,
-                                startDay: nil
+            VStack(spacing: 0) {
+                // Header section with gradient background
+                VStack(spacing: 16) {
+                    Image(systemName: "calendar.badge.plus")
+                        .font(.system(size: 48, weight: .light))
+                        .foregroundStyle(
+                            LinearGradient(
+                                colors: [.blue, .purple],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
                             )
-                            dismiss()
-                        } label: {
-                            HStack {
-                                Spacer()
-                                Text("Remove Allowance")
-                                Spacer()
+                        )
+                        .shadow(color: .blue.opacity(0.3), radius: 4, x: 0, y: 2)
+                    
+                    Text("Allowance Settings")
+                        .font(.system(size: 24, weight: .bold, design: .rounded))
+                        .foregroundColor(.primary)
+                }
+                .padding(.top, 20)
+                .padding(.bottom, 30)
+                .background(
+                    LinearGradient(
+                        colors: [Color(.systemBackground), Color(.systemGroupedBackground)],
+                        startPoint: .top,
+                        endPoint: .bottom
+                    )
+                )
+                
+                Form {
+                    Section {
+                        HStack {
+                            Text("Weekly Amount")
+                                .font(.system(size: 16, weight: .medium, design: .rounded))
+                            Spacer()
+                            TextField("Amount", text: $allowanceAmount)
+                                .keyboardType(.decimalPad)
+                                .multilineTextAlignment(.trailing)
+                                .font(.system(size: 16, weight: .semibold, design: .rounded))
+                        }
+                        .padding(.vertical, 4)
+                        
+                        Picker("Payment Day", selection: $allowanceDay) {
+                            ForEach(0..<7) { index in
+                                Text(weekdays[index])
+                                    .font(.system(size: 16, weight: .medium, design: .rounded))
+                                    .tag(index)
                             }
                         }
+                        .pickerStyle(.menu)
+                        .padding(.vertical, 4)
+                    } header: {
+                        Label("Configuration", systemImage: "gear")
+                            .font(.system(size: 16, weight: .semibold, design: .rounded))
+                            .foregroundColor(.secondary)
+                    } footer: {
+                        Text("The allowance will be automatically added every week on the selected day.")
+                            .font(.system(size: 14, design: .rounded))
+                            .foregroundColor(.secondary)
+                    }
+                    .listRowBackground(
+                        RoundedRectangle(cornerRadius: 12)
+                            .fill(Color(.systemBackground))
+                            .shadow(color: .black.opacity(0.05), radius: 2, x: 0, y: 1)
+                    )
+                    
+                    if tally.weeklyAllowance != nil {
+                        Section {
+                            Button(role: .destructive) {
+                                viewModel.updateAllowanceSettings(
+                                    for: tally.id,
+                                    weeklyAmount: nil,
+                                    startDay: nil
+                                )
+                                dismiss()
+                            } label: {
+                                HStack {
+                                    Image(systemName: "trash.circle.fill")
+                                        .font(.title2)
+                                    Text("Remove Allowance")
+                                        .font(.system(size: 16, weight: .semibold, design: .rounded))
+                                    Spacer()
+                                }
+                                .foregroundColor(.white)
+                                .padding(.vertical, 12)
+                                .frame(maxWidth: .infinity)
+                                .background(
+                                    LinearGradient(
+                                        colors: [.red, .orange],
+                                        startPoint: .topLeading,
+                                        endPoint: .bottomTrailing
+                                    )
+                                )
+                                .cornerRadius(12)
+                                .shadow(color: .red.opacity(0.3), radius: 4, x: 0, y: 2)
+                            }
+                            .buttonStyle(BorderlessButtonStyle())
+                        }
+                        .listRowBackground(Color.clear)
                     }
                 }
+                .scrollContentBackground(.hidden)
             }
-            .navigationTitle("Allowance")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") {
                         dismiss()
                     }
+                    .font(.system(size: 16, weight: .medium, design: .rounded))
                 }
                 
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Save") {
-                        if let amount = Double(allowanceAmount), amount > 0 {
+                        if let amount = Double(allowanceAmount), amount > 0, amount.isFinite, amount <= 9999 {
                             viewModel.updateAllowanceSettings(
                                 for: tally.id,
                                 weeklyAmount: amount,
@@ -79,9 +141,17 @@ struct AllowanceSettingsView: View {
                             dismiss()
                         }
                     }
-                    .disabled(allowanceAmount.isEmpty || Double(allowanceAmount) == nil || Double(allowanceAmount) == 0)
+                    .font(.system(size: 16, weight: .semibold, design: .rounded))
+                    .disabled(allowanceAmount.isEmpty || Double(allowanceAmount) == nil || Double(allowanceAmount) ?? 0 <= 0 || Double(allowanceAmount) ?? 0 > 9999)
                 }
             }
+            .background(
+                LinearGradient(
+                    colors: [Color(.systemGroupedBackground), Color(.systemBackground)],
+                    startPoint: .top,
+                    endPoint: .bottom
+                )
+            )
         }
     }
 }

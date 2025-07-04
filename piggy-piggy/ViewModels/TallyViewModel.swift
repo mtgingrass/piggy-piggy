@@ -4,10 +4,19 @@ import SwiftUI
 @MainActor
 class TallyViewModel: ObservableObject {
     @Published var tallies: [Tally] = []
+    @Published var simulatedDate: Date? = nil
     private let saveKey = "savedTallies"
     
     // Debug mode - set to false for production
+    #if DEBUG
     private let isDebugMode = true
+    #else
+    private let isDebugMode = false
+    #endif
+    
+    var currentDate: Date {
+        simulatedDate ?? Date()
+    }
     
     init() {
         loadTallies()
@@ -23,7 +32,9 @@ class TallyViewModel: ObservableObject {
     }
     
     func addTally(name: String) {
-        let newTally = Tally(name: name)
+        let trimmedName = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedName.isEmpty else { return }
+        let newTally = Tally(name: trimmedName)
         tallies.append(newTally)
         saveTallies()
     }
@@ -34,15 +45,19 @@ class TallyViewModel: ObservableObject {
     }
     
     func addTransaction(to tallyId: UUID, amount: Double, note: String? = nil) {
-        guard let index = tallies.firstIndex(where: { $0.id == tallyId }) else { return }
-        let transaction = Transaction(amount: amount, note: note)
+        guard let index = tallies.firstIndex(where: { $0.id == tallyId }),
+              amount.isFinite else { return }
+        let cleanNote = note?.trimmingCharacters(in: .whitespacesAndNewlines)
+        let transaction = Transaction(amount: amount, note: cleanNote?.isEmpty == true ? nil : cleanNote)
         tallies[index].transactions.append(transaction)
         saveTallies()
     }
     
     func updateTallyName(_ tallyId: UUID, newName: String) {
-        guard let index = tallies.firstIndex(where: { $0.id == tallyId }) else { return }
-        tallies[index].name = newName
+        let trimmedName = newName.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard let index = tallies.firstIndex(where: { $0.id == tallyId }),
+              !trimmedName.isEmpty else { return }
+        tallies[index].name = trimmedName
         saveTallies()
     }
     
@@ -62,10 +77,35 @@ class TallyViewModel: ObservableObject {
     
     func updateAllowanceSettings(for tallyId: UUID, weeklyAmount: Double?, startDay: Int?) {
         guard let index = tallies.firstIndex(where: { $0.id == tallyId }) else { return }
+        
+        // Validate inputs
+        if let amount = weeklyAmount {
+            guard amount > 0 && amount.isFinite else { return }
+        }
+        if let day = startDay {
+            guard day >= 0 && day <= 6 else { return }
+        }
+        
         tallies[index].weeklyAllowance = weeklyAmount
         tallies[index].allowanceStartDay = startDay
+        
         if weeklyAmount != nil && startDay != nil {
-            tallies[index].lastAllowanceDate = Date()
+            // Set to previous occurrence of the allowance day to trigger immediate payment
+            let calendar = Calendar.current
+            let now = Date()
+            let currentWeekday = calendar.component(.weekday, from: now) - 1 // Convert to 0-6
+            let targetWeekday = startDay!
+            
+            var daysBack = currentWeekday - targetWeekday
+            if daysBack < 0 {
+                daysBack += 7 // Go back to previous week
+            }
+            if daysBack == 0 {
+                daysBack = 7 // If today is the allowance day, go back a week
+            }
+            
+            let lastAllowanceDate = calendar.date(byAdding: .day, value: -daysBack, to: now) ?? now
+            tallies[index].lastAllowanceDate = lastAllowanceDate
         } else {
             tallies[index].lastAllowanceDate = nil
         }
@@ -74,7 +114,7 @@ class TallyViewModel: ObservableObject {
     
     func checkAndApplyMissedAllowances() {
         let calendar = Calendar.current
-        let now = Date()
+        let now = currentDate
         
         for (index, tally) in tallies.enumerated() {
             // Skip if allowance is not set up
@@ -84,42 +124,57 @@ class TallyViewModel: ObservableObject {
                 continue
             }
             
-            // Get the number of weeks between lastAllowance and now
-            let components = calendar.dateComponents([.weekOfYear], from: lastAllowance, to: now)
-            guard let weeksElapsed = components.weekOfYear, weeksElapsed > 0 else {
-                continue
+            // Find the next allowance date after lastAllowance
+            var nextAllowanceDate = getNextAllowanceDate(after: lastAllowance, on: startDay, calendar: calendar)
+            var missedPayments: [Date] = []
+            
+            // Collect all missed allowance dates
+            while nextAllowanceDate <= now {
+                missedPayments.append(nextAllowanceDate)
+                nextAllowanceDate = calendar.date(byAdding: .weekOfYear, value: 1, to: nextAllowanceDate) ?? nextAllowanceDate
             }
             
+            guard !missedPayments.isEmpty else { continue }
+            
             print("Processing allowance for \(tally.name):")
-            print("- Weeks elapsed: \(weeksElapsed)")
+            print("- Missed payments: \(missedPayments.count)")
             print("- Weekly amount: $\(weeklyAmount)")
             print("- Last allowance: \(lastAllowance)")
             
-            // Create a transaction for each missed week
-            var currentDate = lastAllowance
-            for weekNum in 1...weeksElapsed {
-                // Move to next week
-                currentDate = calendar.date(byAdding: .weekOfYear, value: 1, to: currentDate) ?? currentDate
-                
-                // Add the transaction
+            // Create transactions for each missed payment
+            for (paymentIndex, paymentDate) in missedPayments.enumerated() {
                 let transaction = Transaction(
-                    timestamp: currentDate,
+                    timestamp: paymentDate,
                     amount: weeklyAmount,
-                    note: "Weekly Allowance"
+                    note: "Weekly Allowance",
+                    isAllowance: true
                 )
                 tallies[index].transactions.append(transaction)
                 
-                print("- Added week \(weekNum) allowance: $\(weeklyAmount) on \(currentDate)")
+                print("- Added payment \(paymentIndex + 1): $\(weeklyAmount) on \(paymentDate)")
             }
             
             // Update the last allowance date to the most recent payment
-            tallies[index].lastAllowanceDate = currentDate
-            print("- Updated last allowance date to: \(currentDate)")
+            if let lastPayment = missedPayments.last {
+                tallies[index].lastAllowanceDate = lastPayment
+                print("- Updated last allowance date to: \(lastPayment)")
+            }
             print("- New balance: $\(tallies[index].balance)")
         }
         
         // Save changes if any allowances were applied
         saveTallies()
+    }
+    
+    private func getNextAllowanceDate(after date: Date, on weekday: Int, calendar: Calendar) -> Date {
+        let currentWeekday = calendar.component(.weekday, from: date) - 1 // Convert to 0-6
+        var daysToAdd = weekday - currentWeekday
+        
+        if daysToAdd <= 0 {
+            daysToAdd += 7 // Move to next week
+        }
+        
+        return calendar.date(byAdding: .day, value: daysToAdd, to: date) ?? date
     }
     
     // Test method to verify allowance functionality
@@ -209,7 +264,8 @@ class TallyViewModel: ObservableObject {
                 let transaction = Transaction(
                     timestamp: currentDate,
                     amount: weeklyAmount,
-                    note: "Weekly Allowance (Simulated)"
+                    note: "Weekly Allowance (Simulated)",
+                    isAllowance: true
                 )
                 tallies[index].transactions.append(transaction)
                 
@@ -261,7 +317,8 @@ class TallyViewModel: ObservableObject {
                 let transaction = Transaction(
                     timestamp: currentDate,
                     amount: weeklyAmount,
-                    note: "Weekly Allowance (Simulated)"
+                    note: "Weekly Allowance (Simulated)",
+                    isAllowance: true
                 )
                 tallies[index].transactions.append(transaction)
                 

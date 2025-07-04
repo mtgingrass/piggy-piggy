@@ -48,11 +48,13 @@ struct TransactionSheet: View {
                     isPresented = false
                 },
                 trailing: Button(isAdd ? "Add" : "Subtract") {
-                    if let amountValue = Double(amount) {
-                        onSave(amountValue, note.isEmpty ? nil : note)
+                    if let amountValue = Double(amount), amountValue > 0, amountValue.isFinite, amountValue <= 99999 {
+                        let cleanNote = note.trimmingCharacters(in: .whitespacesAndNewlines)
+                        onSave(amountValue, cleanNote.isEmpty ? nil : cleanNote)
                     }
                     isPresented = false
                 }
+                .disabled(Double(amount) == nil || Double(amount) ?? 0 <= 0 || Double(amount) ?? 0 > 99999)
             )
             .onAppear {
                 // Focus the amount field when the sheet appears
@@ -77,62 +79,102 @@ struct TallyRow: View {
             // Navigation area
             NavigationLink(destination: TallyDetailView(viewModel: viewModel, tally: tally)) {
                 HStack {
-                    VStack(alignment: .leading, spacing: 4) {
+                    VStack(alignment: .leading, spacing: 8) {
                         Text(tally.name)
-                            .font(.headline)
+                            .font(.system(size: 20, weight: .bold, design: .rounded))
+                            .foregroundColor(.primary)
                         Text("$\(tally.balance, specifier: "%.2f")")
-                            .font(.system(size: 24, weight: .bold))
-                            .foregroundColor(tally.balance >= 0 ? .green : .red)
-                            .padding(.vertical, 4)
-                            .padding(.horizontal, 8)
+                            .font(.system(size: 28, weight: .black, design: .rounded))
+                            .foregroundStyle(
+                                LinearGradient(
+                                    colors: tally.balance >= 0 ? [.green, .mint] : [.red, .orange],
+                                    startPoint: .topLeading,
+                                    endPoint: .bottomTrailing
+                                )
+                            )
+                            .padding(.vertical, 8)
+                            .padding(.horizontal, 12)
                             .background(
-                                RoundedRectangle(cornerRadius: 8)
+                                RoundedRectangle(cornerRadius: 12)
                                     .fill(colorScheme == .dark ? Color(.systemGray6) : Color(.systemBackground))
-                                    .shadow(color: tally.balance >= 0 ? Color.green.opacity(0.2) : Color.red.opacity(0.2), radius: 2, x: 0, y: 1)
+                                    .shadow(color: (tally.balance >= 0 ? Color.green : Color.red).opacity(0.2), radius: 4, x: 0, y: 2)
+                            )
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 12)
+                                    .stroke(
+                                        LinearGradient(
+                                            colors: tally.balance >= 0 ? [.green.opacity(0.3), .mint.opacity(0.3)] : [.red.opacity(0.3), .orange.opacity(0.3)],
+                                            startPoint: .topLeading,
+                                            endPoint: .bottomTrailing
+                                        ),
+                                        lineWidth: 1
+                                    )
                             )
                         
                         // Allowance info
                         if let amount = tally.weeklyAllowance,
                            let day = tally.allowanceStartDay {
-                            HStack(spacing: 4) {
+                            HStack(spacing: 8) {
                                 Text("ALLOWANCE")
-                                    .font(.system(size: 10, weight: .medium))
-                                    .foregroundColor(.secondary)
-                                    .padding(.horizontal, 6)
-                                    .padding(.vertical, 2)
+                                    .font(.system(size: 11, weight: .bold, design: .rounded))
+                                    .foregroundColor(.white)
+                                    .padding(.horizontal, 8)
+                                    .padding(.vertical, 4)
                                     .background(
-                                        RoundedRectangle(cornerRadius: 4)
-                                            .fill(Color(.systemGray6))
+                                        LinearGradient(
+                                            colors: [.purple, .blue],
+                                            startPoint: .topLeading,
+                                            endPoint: .bottomTrailing
+                                        )
                                     )
+                                    .cornerRadius(8)
+                                    .shadow(color: .purple.opacity(0.3), radius: 2, x: 0, y: 1)
                                 Text("$\(amount, specifier: "%.2f") every \(weekdays[day])")
-                                    .font(.caption)
+                                    .font(.system(size: 14, weight: .medium, design: .rounded))
                                     .foregroundColor(.secondary)
                             }
                         }
                     }
                     Spacer()
                     Image(systemName: "arrow.right.circle.fill")
-                        .foregroundColor(.accentColor)
+                        .font(.title2)
+                        .foregroundStyle(
+                            LinearGradient(
+                                colors: [.blue, .purple],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            )
+                        )
+                        .shadow(color: .blue.opacity(0.3), radius: 2, x: 0, y: 1)
                 }
                 .contentShape(Rectangle())
             }
             .buttonStyle(PlainButtonStyle())
             
             // Action buttons in a separate container
-            HStack(spacing: 12) {
+            HStack(spacing: 16) {
                 // Add button
                 Button {
                     showingAddSheet = true
                 } label: {
-                    HStack {
+                    HStack(spacing: 6) {
                         Image(systemName: "plus.circle.fill")
+                            .font(.title3)
                         Text("Add")
+                            .font(.system(size: 16, weight: .semibold, design: .rounded))
                     }
                     .frame(maxWidth: .infinity)
-                    .padding(.vertical, 8)
-                    .background(Color.green)
+                    .padding(.vertical, 12)
+                    .background(
+                        LinearGradient(
+                            colors: [.green, .mint],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
                     .foregroundColor(.white)
-                    .cornerRadius(8)
+                    .cornerRadius(12)
+                    .shadow(color: .green.opacity(0.3), radius: 3, x: 0, y: 2)
                 }
                 .buttonStyle(BorderlessButtonStyle())
                 
@@ -140,30 +182,48 @@ struct TallyRow: View {
                 Button {
                     showingSubtractSheet = true
                 } label: {
-                    HStack {
+                    HStack(spacing: 6) {
                         Image(systemName: "minus.circle.fill")
+                            .font(.title3)
                         Text("Subtract")
+                            .font(.system(size: 16, weight: .semibold, design: .rounded))
                     }
                     .frame(maxWidth: .infinity)
-                    .padding(.vertical, 8)
-                    .background(Color.red)
+                    .padding(.vertical, 12)
+                    .background(
+                        LinearGradient(
+                            colors: [.red, .orange],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
                     .foregroundColor(.white)
-                    .cornerRadius(8)
+                    .cornerRadius(12)
+                    .shadow(color: .red.opacity(0.3), radius: 3, x: 0, y: 2)
                 }
                 .buttonStyle(BorderlessButtonStyle())
             }
         }
-        .padding(.vertical, 12)
-        .padding(.horizontal, 16)
-        .background(colorScheme == .dark ? Color(.systemGray6) : Color(.systemBackground))
-        .cornerRadius(12)
-        .shadow(color: Color.black.opacity(colorScheme == .dark ? 0.3 : 0.1), radius: 2, x: 0, y: 1)
+        .padding(.vertical, 16)
+        .padding(.horizontal, 20)
+        .background(
+            RoundedRectangle(cornerRadius: 20)
+                .fill(colorScheme == .dark ? Color(.systemGray6) : Color(.systemBackground))
+                .shadow(color: Color.black.opacity(colorScheme == .dark ? 0.4 : 0.1), radius: 8, x: 0, y: 4)
+        )
         .overlay(
-            RoundedRectangle(cornerRadius: 12)
-                .stroke(colorScheme == .dark ? Color(.systemGray4) : Color(.systemGray5), lineWidth: 1)
+            RoundedRectangle(cornerRadius: 20)
+                .stroke(
+                    LinearGradient(
+                        colors: [.purple.opacity(0.2), .blue.opacity(0.2)],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    ),
+                    lineWidth: 2
+                )
         )
         .padding(.horizontal)
-        .padding(.vertical, 4)
+        .padding(.vertical, 8)
         .sheet(isPresented: $showingAddSheet) {
             TransactionSheet(
                 title: "Add Funds",

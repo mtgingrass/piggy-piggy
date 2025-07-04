@@ -20,14 +20,42 @@ class ThemeManager: ObservableObject {
 }
 
 struct CustomTitleView: View {
+    let viewModel: TallyViewModel
+    
     var body: some View {
-        HStack(spacing: 4) {
-            Text("Piggy")
-                .font(.system(size: 28, weight: .bold))
-                .foregroundColor(.pink)
-            Text("Piggy")
-                .font(.system(size: 28, weight: .bold))
-                .foregroundColor(.purple)
+        VStack(spacing: 8) {
+            HStack(spacing: 2) {
+                Text("Piggy")
+                    .font(.system(size: 32, weight: .black, design: .rounded))
+                    .foregroundStyle(
+                        LinearGradient(
+                            colors: [.pink, .purple],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
+                    .shadow(color: .pink.opacity(0.3), radius: 2, x: 0, y: 2)
+                Text("Piggy")
+                    .font(.system(size: 32, weight: .black, design: .rounded))
+                    .foregroundStyle(
+                        LinearGradient(
+                            colors: [.purple, .blue],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
+                    .shadow(color: .purple.opacity(0.3), radius: 2, x: 0, y: 2)
+            }
+            
+            Text(viewModel.currentDate, style: .date)
+                .font(.system(size: 14, weight: .medium, design: .rounded))
+                .foregroundColor(.secondary)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 4)
+                .background(
+                    Capsule()
+                        .fill(Color.secondary.opacity(0.1))
+                )
         }
     }
 }
@@ -44,31 +72,44 @@ struct ContentView: View {
     
     var body: some View {
         NavigationView {
-            VStack {
-                List {
+            ScrollView {
+                LazyVStack(spacing: 16) {
                     ForEach(viewModel.tallies) { tally in
                         TallyRow(viewModel: viewModel, tally: tally)
-                            .listRowInsets(EdgeInsets())
-                            .listRowBackground(Color.clear)
-                    }
-                    .onDelete { indexSet in
-                        if let index = indexSet.first {
-                            tallyToDelete = viewModel.tallies[index]
-                            showingDeleteConfirmation = true
-                        }
+                            .contextMenu {
+                                Button(role: .destructive) {
+                                    tallyToDelete = tally
+                                    showingDeleteConfirmation = true
+                                } label: {
+                                    Label("Delete", systemImage: "trash")
+                                }
+                            }
                     }
                 }
-                .listStyle(PlainListStyle())
-                .background(Color(.systemGroupedBackground))
+                .padding(.vertical, 20)
             }
-            .navigationBarTitleDisplayMode(.inline)
+            .background(
+                LinearGradient(
+                    colors: [Color(.systemGroupedBackground), Color(.systemBackground)],
+                    startPoint: .top,
+                    endPoint: .bottom
+                )
+            )
             .toolbar {
                 ToolbarItem(placement: .principal) {
-                    CustomTitleView()
+                    CustomTitleView(viewModel: viewModel)
                 }
                 ToolbarItem(placement: .navigationBarLeading) {
                     Button(action: { showingAddTally = true }) {
-                        Image(systemName: "plus")
+                        Image(systemName: "plus.circle.fill")
+                            .font(.title2)
+                            .foregroundStyle(
+                                LinearGradient(
+                                    colors: [.blue, .purple],
+                                    startPoint: .topLeading,
+                                    endPoint: .bottomTrailing
+                                )
+                            )
                     }
                 }
                 ToolbarItem(placement: .navigationBarTrailing) {
@@ -83,10 +124,25 @@ struct ContentView: View {
                         
                         Button(action: { showingAbout = true }) {
                             Image(systemName: "heart.fill")
-                                .foregroundColor(.red)
+                                .font(.title2)
+                                .foregroundStyle(
+                                    LinearGradient(
+                                        colors: [.red, .pink],
+                                        startPoint: .topLeading,
+                                        endPoint: .bottomTrailing
+                                    )
+                                )
                         }
                         Button(action: { themeManager.isDarkMode.toggle() }) {
                             Image(systemName: themeManager.isDarkMode ? "sun.max.fill" : "moon.fill")
+                                .font(.title2)
+                                .foregroundStyle(
+                                    LinearGradient(
+                                        colors: themeManager.isDarkMode ? [.yellow, .orange] : [.indigo, .purple],
+                                        startPoint: .topLeading,
+                                        endPoint: .bottomTrailing
+                                    )
+                                )
                         }
                     }
                 }
